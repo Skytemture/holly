@@ -1,0 +1,56 @@
+{
+  "name": "MenuItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the menu item"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price in TWD"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "\u8c46\u82b1\u7cfb\u5217",
+        "\u51b0\u54c1\u7cfb\u5217",
+        "\u4ed9\u8349\u7cfb\u5217",
+        "\u9ede\u5fc3\u7cfb\u5217"
+      ],
+      "description": "Menu category"
+    },
+    "is_addon": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is an add-on topping"
+    },
+    "addon_tier": {
+      "type": "string",
+      "enum": [
+        "10",
+        "15"
+      ],
+      "description": "Add-on price tier ($10 or $15)"
+    },
+    "spread_options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Available spread/flavour choices for snack items"
+    },
+    "available": {
+      "type": "boolean",
+      "default": true
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional image URL"
+    }
+  },
+  "required": [
+    "name",
+    "price"
+  ]
+}

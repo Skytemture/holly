@@ -1,0 +1,67 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "table_no": {
+      "type": "number",
+      "description": "Table number"
+    },
+    "items": {
+      "type": "array",
+      "description": "Ordered items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "addons": {
+      "type": "array",
+      "description": "Selected add-on toppings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total": {
+      "type": "number",
+      "description": "Order total in TWD"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "preparing",
+        "ready",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "note": {
+      "type": "string",
+      "description": "Special instructions"
+    }
+  },
+  "required": [
+    "table_no",
+    "items",
+    "total"
+  ]
+}
