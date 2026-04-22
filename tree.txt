@@ -1,0 +1,92 @@
+c:/Users/高啟軒/Documents/侯侯/holly/
+├── components.json
+├── entities/
+│   ├── MenuItem
+│   └── Order
+├── eslint.config.js
+├── index.html
+├── jsconfig.json
+├── package.json
+├── postcss.config.js
+├── README.md
+├── src/
+│   ├── api/
+│   │   └── base44Client.js
+│   ├── App.jsx
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── EditOrderDialog.jsx
+│   │   │   └── OrderCard.jsx
+│   │   ├── order/
+│   │   │   ├── ItemCustomizeModal.jsx
+│   │   │   └── TableSelector.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── ui/
+│   │   │   ├── accordion.jsx
+│   │   │   ├── alert-dialog.jsx
+│   │   │   ├── alert.jsx
+│   │   │   ├── aspect-ratio.jsx
+│   │   │   ├── avatar.jsx
+│   │   │   ├── badge.jsx
+│   │   │   ├── breadcrumb.jsx
+│   │   │   ├── button.jsx
+│   │   │   ├── calendar.jsx
+│   │   │   ├── card.jsx
+│   │   │   ├── carousel.jsx
+│   │   │   ├── chart.jsx
+│   │   │   ├── checkbox.jsx
+│   │   │   ├── collapsible.jsx
+│   │   │   ├── command.jsx
+│   │   │   ├── context-menu.jsx
+│   │   │   ├── dialog.jsx
+│   │   │   ├── drawer.jsx
+│   │   │   ├── dropdown-menu.jsx
+│   │   │   ├── form.jsx
+│   │   │   ├── hover-card.jsx
+│   │   │   ├── input-otp.jsx
+│   │   │   ├── input.jsx
+│   │   │   ├── label.jsx
+│   │   │   ├── menubar.jsx
+│   │   │   ├── navigation-menu.jsx
+│   │   │   ├── pagination.jsx
+│   │   │   ├── popover.jsx
+│   │   │   ├── progress.jsx
+│   │   │   ├── radio-group.jsx
+│   │   │   ├── resizable.jsx
+│   │   │   ├── scroll-area.jsx
+│   │   │   ├── select.jsx
+│   │   │   ├── separator.jsx
+│   │   │   ├── sheet.jsx
+│   │   │   ├── sidebar.jsx
+│   │   │   ├── skeleton.jsx
+│   │   │   ├── slider.jsx
+│   │   │   ├── sonner.jsx
+│   │   │   ├── switch.jsx
+│   │   │   ├── table.jsx
+│   │   │   ├── tabs.jsx
+│   │   │   ├── textarea.jsx
+│   │   │   ├── toast.jsx
+│   │   │   ├── toaster.jsx
+│   │   │   ├── toggle-group.jsx
+│   │   │   ├── toggle.jsx
+│   │   │   ├── tooltip.jsx
+│   │   │   └── use-toast.jsx
+│   │   └── UserNotRegisteredError.jsx
+│   ├── hooks/
+│   │   └── use-mobile.jsx
+│   ├── index.css
+│   ├── lib/
+│   │   ├── app-params.js
+│   │   ├── AuthContext.jsx
+│   │   ├── PageNotFound.jsx
+│   │   ├── query-client.js
+│   │   └── utils.js
+│   ├── main.jsx
+│   ├── pages/
+│   │   ├── AdminOrders.jsx
+│   │   ├── OrderPage.jsx
+│   │   └── Revenue.jsx
+│   └── utils/
+│       └── index.ts
+├── tailwind.config.js
+└── vite.config.js
