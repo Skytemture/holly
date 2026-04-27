@@ -4,11 +4,15 @@
   "properties": {
     "table_no": {
       "type": "number",
-      "description": "Table number"
+      "description": "Table number (0 = takeout)"
+    },
+    "order_number": {
+      "type": "number",
+      "description": "3-digit numeric pickup number (e.g. 042)"
     },
     "items": {
       "type": "array",
-      "description": "Ordered items",
+      "description": "Ordered items, each with its own addons",
       "items": {
         "type": "object",
         "properties": {
@@ -20,13 +24,31 @@
           },
           "quantity": {
             "type": "number"
+          },
+          "note": {
+            "type": "string"
+          },
+          "addons": {
+            "type": "array",
+            "description": "Addons specific to this item",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                }
+              }
+            }
           }
         }
       }
     },
     "addons": {
       "type": "array",
-      "description": "Selected add-on toppings",
+      "description": "Legacy flat addons (kept for backward compat)",
       "items": {
         "type": "object",
         "properties": {

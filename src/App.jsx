@@ -8,6 +8,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import OrderPage from './pages/OrderPage';
 import AdminOrders from './pages/AdminOrders';
 import Revenue from './pages/Revenue';
+import PickupPage from './pages/PickupPage';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -38,6 +39,7 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<OrderPage />} />
       <Route path="/admin" element={<AdminOrders />} />
       <Route path="/revenue" element={<Revenue />} />
+      <Route path="/pickup" element={<PickupPage />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
