@@ -8,7 +8,7 @@
     },
     "price": {
       "type": "number",
-      "description": "Price in TWD"
+      "description": "Base price in TWD"
     },
     "category": {
       "type": "string",
@@ -39,7 +39,22 @@
       "items": {
         "type": "string"
       },
-      "description": "Available spread/flavour choices for snack items"
+      "description": "Simple spread/flavour choices (all same price as base)"
+    },
+    "spread_options_with_price": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Spread/flavour choices with individual prices (used when options have different prices)"
     },
     "available": {
       "type": "boolean",

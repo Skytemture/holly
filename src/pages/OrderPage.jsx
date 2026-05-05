@@ -91,6 +91,7 @@ export default function OrderPage() {
   };
 
   const handleCustomizeConfirm = ({ item, spread, addons, note }) => {
+    // item.price may be overridden by priced spread option selection
     setCart(prev => [...prev, {
       cartId: Date.now() + Math.random(),
       item, spread,
@@ -197,15 +198,29 @@ export default function OrderPage() {
                       <p className="font-medium text-sm">{item.name}</p>
                       {item.available === false
                         ? <p className="text-xs text-destructive mt-0.5">已售完</p>
-                        : item.spread_options?.length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {item.spread_options.join('、')}
-                          </p>
-                        )
+                        : item.spread_options_with_price?.length > 0
+                          ? <p className="text-xs text-muted-foreground mt-0.5">
+                              {item.spread_options_with_price.map(o => o.name).join('、')}
+                            </p>
+                          : item.spread_options?.filter(s => s !== '碎冰' && s !== '不要碎冰').length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {item.spread_options.filter(s => s !== '碎冰' && s !== '不要碎冰').join('、')}
+                            </p>
+                          )
                       }
                     </div>
                     <div className="flex items-center gap-2 ml-3 shrink-0">
-                      <span className="text-sm font-semibold text-accent">${item.price}</span>
+                      <span className="text-sm font-semibold text-accent">
+                        {item.spread_options_with_price?.length > 0
+                          ? (() => {
+                              const prices = item.spread_options_with_price.map(o => o.price);
+                              const min = Math.min(...prices);
+                              const max = Math.max(...prices);
+                              return min === max ? `$${min}` : `$${min}~${max}`;
+                            })()
+                          : `$${item.price}`
+                        }
+                      </span>
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center ${item.available === false ? 'bg-muted' : 'bg-primary/10'}`}>
                         <Plus className={`w-4 h-4 ${item.available === false ? 'text-muted-foreground' : 'text-primary'}`} />
                       </div>
