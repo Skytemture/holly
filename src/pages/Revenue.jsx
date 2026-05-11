@@ -320,7 +320,64 @@ export default function Revenue() {
 
         {/* Hourly heatmap */}
         <HourlyHeatmap orders={validOrders} />
+
+        {/* Sales ranking */}
+        <SalesRanking orders={displayOrders} />
       </div>
+    </div>
+  );
+}
+
+function SalesRanking({ orders }) {
+  const ranked = useMemo(() => {
+    const counts = {};
+    const revenue = {};
+    orders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const base = item.name.replace(/（[^）]*）$/, '');
+        counts[base] = (counts[base] || 0) + (item.quantity || 1);
+        revenue[base] = (revenue[base] || 0) + item.price * (item.quantity || 1);
+      });
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count], idx) => ({ rank: idx + 1, name, count, revenue: revenue[name] || 0 }));
+  }, [orders]);
+
+  const medals = ['🥇', '🥈', '🥉'];
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+      <div>
+        <h2 className="font-semibold text-sm">品項銷售排行</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">依銷售數量排序（前10名）</p>
+      </div>
+      {ranked.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">尚無資料</p>
+      ) : (
+        <div className="space-y-2">
+          {ranked.map(({ rank, name, count, revenue }) => (
+            <div key={name} className="flex items-center gap-3">
+              <span className="w-7 text-center text-sm shrink-0">
+                {rank <= 3 ? medals[rank - 1] : <span className="text-muted-foreground font-medium">{rank}</span>}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium truncate">{name}</span>
+                  <span className="text-xs text-muted-foreground ml-2 shrink-0">{count} 份 · <span className="text-accent font-semibold">${revenue}</span></span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full bg-primary transition-all"
+                    style={{ width: `${(count / ranked[0].count) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

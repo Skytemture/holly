@@ -60,6 +60,11 @@
       "type": "boolean",
       "default": true
     },
+    "is_recommended": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this item is featured as a recommendation"
+    },
     "image_url": {
       "type": "string",
       "description": "Optional image URL"

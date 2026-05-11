@@ -3,7 +3,7 @@ const db = globalThis.__B44_DB__ || { auth:{ isAuthenticated: async()=>false, me
 import React, { useState } from 'react';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Snowflake } from 'lucide-react';
+import { ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Snowflake, Star, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORY_ORDER = ['豆花系列', '冰品系列', '仙草系列', '點心系列', '冬季限定', '加料'];
@@ -23,7 +23,7 @@ export default function ItemAvailabilityPanel() {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: ({ id, available }) => db.entities.MenuItem.update(id, { available }),
+    mutationFn: ({ id, ...fields }) => db.entities.MenuItem.update(id, fields),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menuItems-all'] });
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
@@ -106,22 +106,42 @@ export default function ItemAvailabilityPanel() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {grouped[cat].map(item => (
-                      <button
-                        key={item.id}
-                        onClick={() => toggleMutation.mutate({ id: item.id, available: item.available === false ? true : false })}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
-                          item.available !== false
-                            ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
-                            : 'bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/20'
-                        }`}
-                      >
-                        {item.available !== false
-                          ? <ToggleRight className="w-3.5 h-3.5" />
-                          : <ToggleLeft className="w-3.5 h-3.5" />
-                        }
-                        {item.name}
-                        {item.available === false && <span className="ml-1 opacity-70">售罄</span>}
-                      </button>
+                      <div key={item.id} className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => toggleMutation.mutate({ id: item.id, available: item.available === false ? true : false })}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                            item.available !== false
+                              ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                              : 'bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/20'
+                          }`}
+                        >
+                          {item.available !== false
+                            ? <ToggleRight className="w-3.5 h-3.5" />
+                            : <ToggleLeft className="w-3.5 h-3.5" />
+                          }
+                          {item.name}
+                          {item.available === false && <span className="ml-1 opacity-70">售罄</span>}
+                        </button>
+                        {/* Recommend toggle — styled checkbox */}
+                        <button
+                          onClick={() => toggleMutation.mutate({ id: item.id, is_recommended: !item.is_recommended })}
+                          title={item.is_recommended ? '取消推薦' : '設為推薦'}
+                          className={`group flex items-center gap-1 px-2 py-1.5 rounded-full text-xs font-medium border transition-all active:scale-95 shrink-0 ${
+                            item.is_recommended
+                              ? 'bg-amber-50 border-amber-400 text-amber-600'
+                              : 'bg-card border-border text-muted-foreground hover:border-amber-300 hover:text-amber-500'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-all ${
+                            item.is_recommended
+                              ? 'bg-amber-400 border-amber-400'
+                              : 'border-current'
+                          }`}>
+                            {item.is_recommended && <Check className="w-2.5 h-2.5 text-white" />}
+                          </span>
+                          推薦
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

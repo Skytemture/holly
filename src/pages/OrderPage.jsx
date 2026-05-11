@@ -8,6 +8,7 @@ import { Leaf, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import TableSelector from '@/components/order/TableSelector';
 import ItemCustomizeModal from '@/components/order/ItemCustomizeModal';
+import RecommendModal from '@/components/order/RecommendModal';
 import { Button } from '@/components/ui/button';
 
 const CATEGORY_ORDER = ['豆花系列', '冰品系列', '仙草系列', '點心系列', '冬季限定'];
@@ -20,6 +21,7 @@ export default function OrderPage() {
   const [cart, setCart] = useState([]);
   const [customizingItem, setCustomizingItem] = useState(null);
   const [placedOrderId, setPlacedOrderId] = useState(null);
+  const [showRecommend, setShowRecommend] = useState(false);
   const [seasonalEnabled, setSeasonalEnabled] = useState(
     () => localStorage.getItem(SEASONAL_KEY) === 'true'
   );
@@ -42,7 +44,34 @@ export default function OrderPage() {
     queryFn: () => db.entities.MenuItem.list(),
   });
 
+  // Fetch orders to compute sales ranking (non-cancelled)
+  const { data: allOrders = [] } = useQuery({
+    queryKey: ['orders-rank'],
+    queryFn: () => db.entities.Order.list('-created_date', 500),
+    staleTime: 60000,
+  });
+
+  // Compute top-3 item names by sales count (main items only, exclude addons)
+  // Returns a Map: itemName -> rank (1, 2, or 3)
+  const rankMap = useMemo(() => {
+    const counts = {};
+    allOrders
+      .filter(o => o.status !== 'cancelled')
+      .forEach(o => {
+        (o.items || []).forEach(item => {
+          const base = item.name.replace(/（[^）]*）$/, '');
+          counts[base] = (counts[base] || 0) + (item.quantity || 1);
+        });
+      });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    // Build map using both stripped name AND full name for flexible lookup
+    const map = new Map();
+    sorted.forEach(([strippedName], idx) => map.set(strippedName, idx + 1));
+    return map;
+  }, [allOrders]);
+
   const mainItems = useMemo(() => menuItems.filter(i => !i.is_addon), [menuItems]);
+  const recommendedItems = useMemo(() => menuItems.filter(i => !i.is_addon && i.is_recommended && i.available !== false), [menuItems]);
   const addons10 = useMemo(() => menuItems.filter(i => i.is_addon && i.addon_tier === '10' && i.available !== false), [menuItems]);
   const addons15 = useMemo(() => menuItems.filter(i => i.is_addon && i.addon_tier === '15' && i.available !== false), [menuItems]);
 
@@ -63,8 +92,16 @@ export default function OrderPage() {
 
   const total = useMemo(() =>
     cart.reduce((sum, entry) => {
-      const addonsTotal = entry.addons.reduce((s, aid) => s + (addonMap[aid]?.price || 0), 0);
-      return sum + entry.item.price + addonsTotal;
+      const qty = entry.quantity || 1;
+      const addonsTotal = entry.addonsData
+        ? entry.addonsData.reduce((s, a) => s + (a.price || 0), 0)
+        : entry.addons.reduce((s, aid) => {
+            const price = entry.addonPricingMap
+              ? (entry.addonPricingMap[aid] ?? addonMap[aid]?.price ?? 0)
+              : (addonMap[aid]?.price || 0);
+            return s + price;
+          }, 0);
+      return sum + (entry.item.price + addonsTotal) * qty;
     }, 0)
   , [cart, addonMap]);
 
@@ -90,12 +127,14 @@ export default function OrderPage() {
     cartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleCustomizeConfirm = ({ item, spread, addons, note }) => {
-    // item.price may be overridden by priced spread option selection
+  const handleCustomizeConfirm = ({ item, spread, addons, addonsData, addonPricingMap, note, quantity }) => {
     setCart(prev => [...prev, {
       cartId: Date.now() + Math.random(),
       item, spread,
-      addons, // array of addon ids
+      addons, // array of addon ids (may be repeated for qty>1 of same addon)
+      addonsData: addonsData || null, // full {id, name, price} for submit
+      addonPricingMap: addonPricingMap || null,
+      quantity: quantity || 1,
       note,
     }]);
     setCustomizingItem(null);
@@ -105,27 +144,54 @@ export default function OrderPage() {
     setCart(prev => prev.filter(e => e.cartId !== cartId));
   };
 
+  const submitOrder = (extraEntries = []) => {
+    const allCartEntries = [
+      ...cart,
+      ...extraEntries.map(entry => ({
+        cartId: Date.now() + Math.random(),
+        item: entry.item,
+        spread: entry.spread || null,
+        addons: entry.addons || [],
+        addonPricingMap: entry.addonPricingMap || null,
+        note: entry.note || '',
+      })),
+    ];
+    const items = allCartEntries.map(entry => {
+      const itemAddons = entry.addonsData
+        ? entry.addonsData.map(a => ({ name: a.name, price: a.price }))
+        : entry.addons.map(aid => ({
+            name: addonMap[aid]?.name || '',
+            price: entry.addonPricingMap
+              ? (entry.addonPricingMap[aid] ?? addonMap[aid]?.price ?? 0)
+              : (addonMap[aid]?.price || 0),
+          }));
+      return {
+        name: entry.item.name + (entry.spread ? `（${entry.spread}）` : ''),
+        price: entry.item.price,
+        quantity: entry.quantity || 1,
+        note: entry.note || undefined,
+        addons: itemAddons,
+      };
+    });
+    // Recalculate total including extra entries
+    const extraTotal = extraEntries.reduce((s, entry) => s + (entry.item?.price ?? 0), 0);
+    const orderNumber = Math.floor(Math.random() * 900) + 100;
+    createOrder.mutate({ table_no: tableNo, items, addons: [], total: total + extraTotal, status: 'pending', order_number: orderNumber });
+  };
+
   const handleSubmit = () => {
     if (tableNo === null) {
       toast({ title: '請先選擇桌號或外帶', variant: 'destructive' });
       return;
     }
-    const items = cart.map(entry => {
-      const itemAddons = entry.addons.map(aid => ({
-        name: addonMap[aid]?.name || '',
-        price: addonMap[aid]?.price || 0,
-      }));
-      return {
-        name: entry.item.name + (entry.spread ? `（${entry.spread}）` : ''),
-        price: entry.item.price,
-        quantity: 1,
-        note: entry.note || undefined,
-        addons: itemAddons,
-      };
-    });
-    // Generate a 3-digit numeric pickup number (100–999)
-    const orderNumber = Math.floor(Math.random() * 900) + 100;
-    createOrder.mutate({ table_no: tableNo, items, addons: [], total, status: 'pending', order_number: orderNumber });
+    // Show recommend modal if there are recommendations not already in cart
+    const cartNames = new Set(cart.map(e => e.item.name));
+    const eligible = recommendedItems.filter(i => !cartNames.has(i.name));
+    if (eligible.length > 0) {
+      setShowRecommend(true);
+    } else {
+      submitOrder([]);
+    }
   };
 
   if (isLoading) {
@@ -188,12 +254,25 @@ export default function OrderPage() {
                     key={item.id}
                     onClick={() => item.available !== false && setCustomizingItem(item)}
                     disabled={item.available === false}
-                    className={`flex items-center justify-between bg-card border rounded-xl px-4 py-3 transition-all text-left ${
+                    className={`relative flex items-center justify-between bg-card border rounded-xl px-4 py-3 transition-all text-left ${
                       item.available === false
                         ? 'border-border opacity-50 cursor-not-allowed'
                         : 'border-border hover:border-primary/40 hover:shadow-md active:scale-95'
                     }`}
                   >
+                    {/* Sales rank badge — look up by stripped name to match order data */}
+                    {(() => {
+                      const strippedName = item.name.replace(/（[^）]*）$/, '');
+                      const rank = rankMap.get(strippedName) ?? rankMap.get(item.name);
+                      if (!rank) return null;
+                      return (
+                        <span className={`absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-10 ${
+                          rank === 1 ? 'bg-yellow-400' : rank === 2 ? 'bg-slate-400' : 'bg-amber-600'
+                        }`}>
+                          {rank}
+                        </span>
+                      );
+                    })()}
                     <div>
                       <p className="font-medium text-sm">{item.name}</p>
                       {item.available === false
@@ -239,8 +318,19 @@ export default function OrderPage() {
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <AnimatePresence>
                 {cart.map((entry) => {
-                  const entryAddons = entry.addons.map(aid => addonMap[aid]).filter(Boolean);
-                  const entryTotal = entry.item.price + entryAddons.reduce((s, a) => s + a.price, 0);
+                  const entryAddons = entry.addonsData
+                    ? [...new Map(entry.addonsData.map(a => [a.id, a])).values()]
+                    : entry.addons.map(aid => addonMap[aid]).filter(Boolean);
+                  const qty = entry.quantity || 1;
+                  const addonsUnitTotal = entry.addonsData
+                    ? entry.addonsData.reduce((s, a) => s + (a.price || 0), 0)
+                    : entry.addons.reduce((s, aid) => {
+                        const price = entry.addonPricingMap
+                          ? (entry.addonPricingMap[aid] ?? addonMap[aid]?.price ?? 0)
+                          : (addonMap[aid]?.price || 0);
+                        return s + price;
+                      }, 0);
+                  const entryTotal = (entry.item.price + addonsUnitTotal) * qty;
                   return (
                     <motion.div
                       key={entry.cartId}
@@ -253,9 +343,16 @@ export default function OrderPage() {
                         <p className="text-sm font-medium">
                           {entry.item.name}
                           {entry.spread && <span className="text-muted-foreground ml-1">（{entry.spread}）</span>}
+                          {qty > 1 && <span className="ml-1.5 text-xs font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">×{qty}</span>}
                         </p>
                         {entryAddons.length > 0 && (
-                          <p className="text-xs text-muted-foreground">加料：{entryAddons.map(a => a.name).join('、')}</p>
+                          <p className="text-xs text-muted-foreground">
+                            加料：{entry.addonsData
+                              ? Object.entries(entry.addonsData.reduce((acc, a) => { acc[a.name] = (acc[a.name] || 0) + 1; return acc; }, {}))
+                                  .map(([name, n]) => n > 1 ? `${name}×${n}` : name).join('、')
+                              : entryAddons.map(a => a.name).join('、')
+                            }
+                          </p>
                         )}
                         {entry.note && (
                           <p className="text-xs text-muted-foreground">備註：{entry.note}</p>
@@ -331,6 +428,36 @@ export default function OrderPage() {
         open={!!customizingItem}
         onClose={() => setCustomizingItem(null)}
         onConfirm={handleCustomizeConfirm}
+      />
+
+      <RecommendModal
+        open={showRecommend}
+        onClose={() => setShowRecommend(false)}
+        recommendedItems={recommendedItems.filter(i => !new Set(cart.map(e => e.item.name)).has(i.name))}
+        addons10={addons10}
+        addons15={addons15}
+        onConfirm={(extraEntries) => {
+          setShowRecommend(false);
+          if (extraEntries.length > 0) {
+            // Add recommended items to cart so user can review total before submitting
+            setCart(prev => [
+              ...prev,
+              ...extraEntries.map(entry => ({
+                cartId: Date.now() + Math.random(),
+                item: entry.item,
+                spread: entry.spread || null,
+                addons: entry.addons || [],
+                addonsData: entry.addonsData || null,
+                addonPricingMap: entry.addonPricingMap || null,
+                quantity: entry.quantity || 1,
+                note: entry.note || '',
+              })),
+            ]);
+            setTimeout(() => cartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+          } else {
+            submitOrder([]);
+          }
+        }}
       />
     </div>
   );
