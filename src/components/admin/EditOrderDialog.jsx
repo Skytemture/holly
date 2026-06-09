@@ -7,8 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Plus, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Loader2, Plus, Minus, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 
 // Per-item editor: handles addons for non-snack, spread for snack
 function ItemEntryEditor({ cartEntry, menuItems, onUpdate, onRemove }) {
@@ -21,12 +20,14 @@ function ItemEntryEditor({ cartEntry, menuItems, onUpdate, onRemove }) {
   const addons15 = menuItems.filter(i => i.is_addon && i.addon_tier === '15');
   const hasAddons = addons10.length > 0 || addons15.length > 0;
 
-  const toggleAddon = (addonItem) => {
-    const already = cartEntry.addons.some(a => a.name === addonItem.name);
-    const newAddons = already
-      ? cartEntry.addons.filter(a => a.name !== addonItem.name)
-      : [...cartEntry.addons, { name: addonItem.name, price: addonItem.price }];
-    onUpdate({ ...cartEntry, addons: newAddons });
+  const getAddonQty = (addonItem) => cartEntry.addons.filter(a => a.name === addonItem.name).length;
+
+  const changeAddonQty = (addonItem, delta) => {
+    const current = getAddonQty(addonItem);
+    const next = Math.max(current + delta, 0);
+    const withoutThis = cartEntry.addons.filter(a => a.name !== addonItem.name);
+    const added = Array(next).fill({ name: addonItem.name, price: addonItem.price });
+    onUpdate({ ...cartEntry, addons: [...withoutThis, ...added] });
   };
 
   const selectSpread = (opt) => {
@@ -99,32 +100,34 @@ function ItemEntryEditor({ cartEntry, menuItems, onUpdate, onRemove }) {
               {addons10.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">+$10</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    {addons10.map(a => (
-                      <label key={a.id} className="flex items-center gap-1.5 cursor-pointer">
-                        <Checkbox
-                          checked={cartEntry.addons.some(x => x.name === a.name)}
-                          onCheckedChange={() => toggleAddon(a)}
-                        />
-                        <span className="text-sm">{a.name}</span>
-                      </label>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {addons10.map(a => {
+                      const qty = getAddonQty(a);
+                      return (
+                        <div key={a.id} className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-sm transition-colors ${qty > 0 ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                          <button onClick={() => changeAddonQty(a, -1)} disabled={qty === 0} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30"><Minus className="w-3 h-3" /></button>
+                          <span className={qty > 0 ? 'font-semibold text-primary' : ''}>{a.name}{qty > 0 ? ` ×${qty}` : ''}</span>
+                          <button onClick={() => changeAddonQty(a, 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
               {addons15.length > 0 && (
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground">+$15</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    {addons15.map(a => (
-                      <label key={a.id} className="flex items-center gap-1.5 cursor-pointer">
-                        <Checkbox
-                          checked={cartEntry.addons.some(x => x.name === a.name)}
-                          onCheckedChange={() => toggleAddon(a)}
-                        />
-                        <span className="text-sm">{a.name}</span>
-                      </label>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {addons15.map(a => {
+                      const qty = getAddonQty(a);
+                      return (
+                        <div key={a.id} className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-sm transition-colors ${qty > 0 ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                          <button onClick={() => changeAddonQty(a, -1)} disabled={qty === 0} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-muted disabled:opacity-30"><Minus className="w-3 h-3" /></button>
+                          <span className={qty > 0 ? 'font-semibold text-primary' : ''}>{a.name}{qty > 0 ? ` ×${qty}` : ''}</span>
+                          <button onClick={() => changeAddonQty(a, 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

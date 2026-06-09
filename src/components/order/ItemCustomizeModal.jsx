@@ -110,7 +110,7 @@ export default function ItemCustomizeModal({ item, addons10, addons15, open, onC
       const freeForId = freeSlots[id] || 0;
       const chargedQty = Math.max(qty - freeForId, 0);
       // effective price per unit that gets stored (for pricing map usage)
-      map[id] = chargedQty > 0 ? Math.round((chargedQty * unitPrice) / qty * 10) / 10 : 0;
+      map[id] = chargedQty > 0 ? Math.round((chargedQty * unitPrice) / qty) : 0;
     });
     return map;
   }, [selectedAddonIds, freeAddonCount, allAddons, addonQty]);

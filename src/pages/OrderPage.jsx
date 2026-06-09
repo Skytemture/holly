@@ -22,6 +22,7 @@ export default function OrderPage() {
   const [customizingItem, setCustomizingItem] = useState(null);
   const [placedOrderId, setPlacedOrderId] = useState(null);
   const [showRecommend, setShowRecommend] = useState(false);
+  const [recommendShown, setRecommendShown] = useState(false);
   const [seasonalEnabled, setSeasonalEnabled] = useState(
     () => localStorage.getItem(SEASONAL_KEY) === 'true'
   );
@@ -184,10 +185,11 @@ export default function OrderPage() {
       toast({ title: '請先選擇桌號或外帶', variant: 'destructive' });
       return;
     }
-    // Show recommend modal if there are recommendations not already in cart
+    // Show recommend modal once per session (only if not shown yet)
     const cartNames = new Set(cart.map(e => e.item.name));
     const eligible = recommendedItems.filter(i => !cartNames.has(i.name));
-    if (eligible.length > 0) {
+    if (!recommendShown && eligible.length > 0) {
+      setRecommendShown(true);
       setShowRecommend(true);
     } else {
       submitOrder([]);
